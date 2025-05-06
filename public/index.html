@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Management System</title>
+    <style>
+        body {
+            background-color: #f4f7f6;
+        }
+
+        .task {
+            background-color: #fff;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .form-section {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+        }
+    </style>
+</head>
+<body>
+<div class="container mt-5">
+    <h1 class="text-center mb-4">Task Management System</h1>
+
+    
+    <div class="form-section">
+        <h2>Create Task</h2>
+        <form id="taskForm">
+            <div class="mb-3">
+                <label for="title" class="form-label">Title</label>
+                <input type="text" id="title" class="form-control" placeholder="Enter title" required />
+            </div>
+            <div class="mb-3">
+                <label for="description" class="form-label">Description</label>
+                <input type="text" id="description" class="form-control" placeholder="Enter description" required />
+            </div>
+            <div class="mb-3">
+                <label for="status" class="form-label">Status</label>
+                <select id="status" class="form-select" required>
+                    <option value="in progress">In Progress</option>
+                    <option value="completed">Completed</option>
+                    <option value="pending">Pending</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Create Task</button>
+        </form>
+    </div>
+
+    
+    <div class="form-section">
+        <h2>Create User</h2>
+        <form id="userForm">
+            <div class="mb-3">
+                <label for="username" class="form-label">Username</label>
+                <input type="text" id="username" class="form-control" required />
+            </div>
+            <div class="mb-3">
+                <label for="email" class="form-label">Email</label>
+                <input type="email" id="email" class="form-control" required />
+            </div>
+            <div class="mb-3">
+                <label for="password" class="form-label">Password</label>
+                <input type="password" id="password" class="form-control" required />
+            </div>
+            <div class="mb-3">
+                <label for="role" class="form-label">Role</label>
+                <input type="text" id="role" class="form-control" required />
+            </div>
+            <button type="submit" class="btn btn-primary">Create User</button>
+        </form>
+    </div>
+
+    
+    <div class="form-section">
+        <h2>Create Project</h2>
+        <form id="projectForm">
+            <div class="mb-3">
+                <label for="projectName" class="form-label">Project Name</label>
+                <input type="text" id="projectName" class="form-control" required />
+            </div>
+            <div class="mb-3">
+                <label for="projectDescription" class="form-label">Project Description</label>
+                <input type="text" id="projectDescription" class="form-control" required />
+            </div>
+            <button type="submit" class="btn btn-primary">Create Project</button>
+        </form>
+    </div>
+
+   
+    <div class="form-section" id="editTaskContainer" style="display:none;">
+        <h2>Edit Task</h2>
+        <form id="editTaskForm">
+            <div class="mb-3">
+                <label for="editTitle" class="form-label">Title</label>
+                <input type="text" id="editTitle" class="form-control" required />
+            </div>
+            <div class="mb-3">
+                <label for="editDescription" class="form-label">Description</label>
+                <input type="text" id="editDescription" class="form-control" required />
+            </div>
+            <div class="mb-3">
+                <label for="editStatus" class="form-label">Status</label>
+                <select id="editStatus" class="form-select" required>
+                    <option value="urgent">Urgent</option>
+                    <option value="normal">Normal</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-success">Update Task</button>
+        </form>
+    </div>
+
+    
+    <div class="mb-4">
+        <h2>Task List</h2>
+        <div id="taskList"></div>
+    </div>
+</div>
+
+<script>
+    const taskListContainer = document.getElementById('taskList');
+    const taskForm = document.getElementById('taskForm');
+    const userForm = document.getElementById('userForm');
+    const projectForm = document.getElementById('projectForm');
+    const editTaskForm = document.getElementById('editTaskForm');
+    const editTaskContainer = document.getElementById('editTaskContainer');
+    let currentEditingTaskId = null;
+
+    
+    function loadTasks() {
+        fetch('http://localhost:3000/api/tasks')
+            .then(response => response.json())
+            .then(tasks => {
+                taskListContainer.innerHTML = '';
+                tasks.forEach(task => {
+                    const taskElement = document.createElement('div');
+                    taskElement.classList.add('task');
+                    taskElement.innerHTML = `
+                        <h5>${task.title}</h5>
+                        <p>${task.description}</p>
+                        <p><strong>Status:</strong> ${task.status}</p>
+                        <button class="btn btn-sm btn-outline-primary me-2" onclick="editTask(${task.id})">Edit</button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteTask(${task.id})">Delete</button>
+                    `;
+                    taskListContainer.appendChild(taskElement);
+                });
+            })
+            .catch(err => alert('Error loading tasks: ' + err));
+    }
+
+    
+    taskForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        const title = document.getElementById('title').value;
+        const description = document.getElementById('description').value;
+        const status = document.getElementById('status').value;
+
+        fetch('http://localhost:3000/api/tasks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, description, status })
+        })
+        .then(res => res.json())
+        .then(() => {
+            loadTasks();
+            taskForm.reset();
+        })
+        .catch(err => alert('Error creating task: ' + err));
+    });
+
+
+    function editTask(id) {
+        fetch(`http://localhost:3000/api/tasks/${id}`)
+            .then(res => res.json())
+            .then(task => {
+                document.getElementById('editTitle').value = task.title;
+                document.getElementById('editDescription').value = task.description;
+                document.getElementById('editStatus').value = task.status;
+                currentEditingTaskId = id;
+                editTaskContainer.style.display = 'block';
+                window.scrollTo(0, document.body.scrollHeight);
+            })
+            .catch(err => alert('Error loading task for editing: ' + err));
+    }
+
+    
+    editTaskForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        const title = document.getElementById('editTitle').value;
+        const description = document.getElementById('editDescription').value;
+        const status = document.getElementById('editStatus').value;
+
+        fetch(`http://localhost:3000/api/tasks/${currentEditingTaskId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, description, status })
+        })
+        .then(res => res.json())
+        .then(() => {
+            editTaskForm.reset();
+            editTaskContainer.style.display = 'none';
+            loadTasks();
+        })
+        .catch(err => alert('Error updating task: ' + err));
+    });
+
+    
+    function deleteTask(id) {
+        if (!confirm('Are you sure you want to delete this task?')) return;
+
+        fetch(`http://localhost:3000/api/tasks/${id}`, {
+            method: 'DELETE'
+        })
+        .then(() => loadTasks())
+        .catch(err => alert('Error deleting task: ' + err));
+    }
+
+    
+    userForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        const username = document.getElementById('username').value;
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const role = document.getElementById('role').value;
+
+        fetch('http://localhost:3000/api/users', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, email, password, role })
+        })
+        .then(res => res.json())
+        .then(() => userForm.reset())
+        .catch(err => alert('Error creating user: ' + err));
+    });
+
+    
+    projectForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        const name = document.getElementById('projectName').value;
+        const description = document.getElementById('projectDescription').value;
+
+        fetch('http://localhost:3000/api/projects', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, description })
+        })
+        .then(res => res.json())
+        .then(() => projectForm.reset())
+        .catch(err => alert('Error creating project: ' + err));
+    });
+
+    
+    loadTasks();
+</script>
+</body>
+</html>
