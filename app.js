@@ -1,6 +1,6 @@
 require('dotenv').config();
 const express = require('express');
-const Database = require('./database'); // Your updated database class
+const Database = require('./models/db');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
