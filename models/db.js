@@ -5,13 +5,13 @@ require('dotenv').config();
 class Database {
   constructor() {
     this.pool = mysql.createPool({
-  host: 'trolley.proxy.rlwy.net',  // ← Use this public host
-  port: 33610,                     // ← Public port
+  host: 'trolley.proxy.rlwy.net',  
+  port: 33610,                     
   user: process.env.MYSQLUSER,
   password: process.env.MYSQLPASSWORD,
   database: process.env.MYSQLDATABASE,
-  ssl: { rejectUnauthorized: false }, // Required for Railway's public URL
-  connectTimeout: 5000 // Fail fast
+  ssl: { rejectUnauthorized: false }, 
+  connectTimeout: 5000 
 });
   }
 

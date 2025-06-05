@@ -11,25 +11,25 @@ class TaskModel {
   static async getById(id) {
     const sql = 'SELECT * FROM tasks WHERE id = ?';
     const [rows] = await db.query(sql, [id]);
-    return rows[0]; // return single task or undefined
+    return rows[0]; 
   }
 
   static async create(task) {
     const sql = 'INSERT INTO tasks (title, description, status) VALUES (?, ?, ?)';
     const [result] = await db.query(sql, [task.title, task.description, task.status]);
-    return result.insertId; // return new inserted task id
+    return result.insertId; 
   }
 
   static async update(id, task) {
     const sql = 'UPDATE tasks SET title = ?, description = ?, status = ? WHERE id = ?';
     const [result] = await db.query(sql, [task.title, task.description, task.status, id]);
-    return result.affectedRows; // number of rows updated (should be 1 or 0)
+    return result.affectedRows; 
   }
 
   static async delete(id) {
     const sql = 'DELETE FROM tasks WHERE id = ?';
     const [result] = await db.query(sql, [id]);
-    return result.affectedRows; // number of rows deleted
+    return result.affectedRows; 
   }
 }
 

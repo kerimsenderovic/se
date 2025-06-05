@@ -5,7 +5,7 @@ const Database = require('./models/db');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Enhanced startup sequence
+
 async function startServer() {
   try {
     const isConnected = await Database.testConnection();
@@ -14,12 +14,12 @@ async function startServer() {
       process.exit(1);
     }
 
-    // Middleware
+    
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
     app.use(express.static('public'));
 
-    // Routes
+   
     app.get('/', (req, res) => {
       res.send('Task Management System API is running.');
     });
@@ -27,7 +27,7 @@ async function startServer() {
     const apiRoutes = require('./routes/apiRoutes');
     app.use('/api', apiRoutes);
 
-    // Error handling middleware
+    
     app.use((err, req, res, next) => {
       console.error(err.stack);
       res.status(500).send('Something broke!');
