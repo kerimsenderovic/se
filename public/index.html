@@ -9,7 +9,6 @@
         body {
             background-color: #f4f7f6;
         }
-
         .task {
             background-color: #fff;
             padding: 15px;
@@ -17,7 +16,6 @@
             border-radius: 5px;
             box-shadow: 0 0 5px rgba(0, 0, 0, 0.05);
         }
-
         .form-section {
             background-color: #fff;
             padding: 20px;
@@ -30,7 +28,6 @@
 <body>
 <div class="container mt-5">
     <h1 class="text-center mb-4">Task Management System</h1>
-
     
     <div class="form-section">
         <h2>Create Task</h2>
@@ -55,7 +52,6 @@
         </form>
     </div>
 
-    
     <div class="form-section">
         <h2>Create User</h2>
         <form id="userForm">
@@ -79,7 +75,6 @@
         </form>
     </div>
 
-    
     <div class="form-section">
         <h2>Create Project</h2>
         <form id="projectForm">
@@ -95,7 +90,6 @@
         </form>
     </div>
 
-   
     <div class="form-section" id="editTaskContainer" style="display:none;">
         <h2>Edit Task</h2>
         <form id="editTaskForm">
@@ -110,15 +104,15 @@
             <div class="mb-3">
                 <label for="editStatus" class="form-label">Status</label>
                 <select id="editStatus" class="form-select" required>
-                    <option value="urgent">Urgent</option>
-                    <option value="normal">Normal</option>
+                    <option value="in progress">In Progress</option>
+                    <option value="completed">Completed</option>
+                    <option value="pending">Pending</option>
                 </select>
             </div>
             <button type="submit" class="btn btn-success">Update Task</button>
         </form>
     </div>
 
-    
     <div class="mb-4">
         <h2>Task List</h2>
         <div id="taskList"></div>
@@ -134,10 +128,17 @@
     const editTaskContainer = document.getElementById('editTaskContainer');
     let currentEditingTaskId = null;
 
-    
+    // Base URL for API calls
+    const API_BASE_URL = 'https://se-production-4541.up.railway.app/api';
+
     function loadTasks() {
-        fetch('http://localhost:3000/api/tasks')
-            .then(response => response.json())
+        fetch(`${API_BASE_URL}/tasks`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
             .then(tasks => {
                 taskListContainer.innerHTML = '';
                 tasks.forEach(task => {
@@ -147,39 +148,49 @@
                         <h5>${task.title}</h5>
                         <p>${task.description}</p>
                         <p><strong>Status:</strong> ${task.status}</p>
-                        <button class="btn btn-sm btn-outline-primary me-2" onclick="editTask(${task.id})">Edit</button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="deleteTask(${task.id})">Delete</button>
+                        <button class="btn btn-sm btn-outline-primary me-2" onclick="editTask('${task.id}')">Edit</button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteTask('${task.id}')">Delete</button>
                     `;
                     taskListContainer.appendChild(taskElement);
                 });
             })
-            .catch(err => alert('Error loading tasks: ' + err));
+            .catch(err => console.error('Error loading tasks:', err));
     }
 
-    
     taskForm.addEventListener('submit', function (e) {
         e.preventDefault();
         const title = document.getElementById('title').value;
         const description = document.getElementById('description').value;
         const status = document.getElementById('status').value;
 
-        fetch('http://localhost:3000/api/tasks', {
+        fetch(`${API_BASE_URL}/tasks`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+            },
             body: JSON.stringify({ title, description, status })
         })
-        .then(res => res.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to create task');
+            }
+            return response.json();
+        })
         .then(() => {
             loadTasks();
             taskForm.reset();
         })
-        .catch(err => alert('Error creating task: ' + err));
+        .catch(err => console.error('Error creating task:', err));
     });
 
-
     function editTask(id) {
-        fetch(`http://localhost:3000/api/tasks/${id}`)
-            .then(res => res.json())
+        fetch(`${API_BASE_URL}/tasks/${id}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to fetch task');
+                }
+                return response.json();
+            })
             .then(task => {
                 document.getElementById('editTitle').value = task.title;
                 document.getElementById('editDescription').value = task.description;
@@ -188,42 +199,49 @@
                 editTaskContainer.style.display = 'block';
                 window.scrollTo(0, document.body.scrollHeight);
             })
-            .catch(err => alert('Error loading task for editing: ' + err));
+            .catch(err => console.error('Error loading task for editing:', err));
     }
 
-    
     editTaskForm.addEventListener('submit', function (e) {
         e.preventDefault();
         const title = document.getElementById('editTitle').value;
         const description = document.getElementById('editDescription').value;
         const status = document.getElementById('editStatus').value;
 
-        fetch(`http://localhost:3000/api/tasks/${currentEditingTaskId}`, {
+        fetch(`${API_BASE_URL}/tasks/${currentEditingTaskId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ title, description, status })
         })
-        .then(res => res.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to update task');
+            }
+            return response.json();
+        })
         .then(() => {
             editTaskForm.reset();
             editTaskContainer.style.display = 'none';
             loadTasks();
         })
-        .catch(err => alert('Error updating task: ' + err));
+        .catch(err => console.error('Error updating task:', err));
     });
 
-    
     function deleteTask(id) {
         if (!confirm('Are you sure you want to delete this task?')) return;
 
-        fetch(`http://localhost:3000/api/tasks/${id}`, {
+        fetch(`${API_BASE_URL}/tasks/${id}`, {
             method: 'DELETE'
         })
-        .then(() => loadTasks())
-        .catch(err => alert('Error deleting task: ' + err));
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to delete task');
+            }
+            loadTasks();
+        })
+        .catch(err => console.error('Error deleting task:', err));
     }
 
-    
     userForm.addEventListener('submit', function (e) {
         e.preventDefault();
         const username = document.getElementById('username').value;
@@ -231,33 +249,41 @@
         const password = document.getElementById('password').value;
         const role = document.getElementById('role').value;
 
-        fetch('http://localhost:3000/api/users', {
+        fetch(`${API_BASE_URL}/users`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, email, password, role })
         })
-        .then(res => res.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to create user');
+            }
+            return response.json();
+        })
         .then(() => userForm.reset())
-        .catch(err => alert('Error creating user: ' + err));
+        .catch(err => console.error('Error creating user:', err));
     });
 
-    
     projectForm.addEventListener('submit', function (e) {
         e.preventDefault();
         const name = document.getElementById('projectName').value;
         const description = document.getElementById('projectDescription').value;
 
-        fetch('http://localhost:3000/api/projects', {
+        fetch(`${API_BASE_URL}/projects`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, description })
         })
-        .then(res => res.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to create project');
+            }
+            return response.json();
+        })
         .then(() => projectForm.reset())
-        .catch(err => alert('Error creating project: ' + err));
+        .catch(err => console.error('Error creating project:', err));
     });
 
-    
     loadTasks();
 </script>
 </body>
