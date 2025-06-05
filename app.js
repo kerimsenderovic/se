@@ -1,5 +1,6 @@
 const express = require('express');
 const app = express();
+
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
@@ -10,7 +11,7 @@ app.get('/', (req, res) => {
     res.send('Task Management System API is running.');
 });
 
-// Assuming you have apiRoutes in ./routes/apiRoutes.js
+// Your API routes
 const apiRoutes = require('./routes/apiRoutes');
 app.use('/api', apiRoutes);
 
