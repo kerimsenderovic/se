@@ -5,19 +5,14 @@ require('dotenv').config();
 class Database {
   constructor() {
     this.pool = mysql.createPool({
-      host: process.env.MYSQLHOST || 'trolley.proxy.rlwy.net',
-      user: process.env.MYSQLUSER || 'root',
-      password: process.env.MYSQLPASSWORD || 'lzxkPnxcOhYcozXiIAnbOpVOzNWOThYn',
-      database: process.env.MYSQLDATABASE || 'railway',
-      port: process.env.MYSQLPORT || 33610,
-      waitForConnections: true,
-      connectionLimit: 10,
-      queueLimit: 0,
-      connectTimeout: 10000, // 10 seconds timeout
-      ssl: {
-        rejectUnauthorized: false // Railway's public URL might need SSL
-      }
-    });
+  host: 'trolley.proxy.rlwy.net',  // ← Use this public host
+  port: 33610,                     // ← Public port
+  user: process.env.MYSQLUSER,
+  password: process.env.MYSQLPASSWORD,
+  database: process.env.MYSQLDATABASE,
+  ssl: { rejectUnauthorized: false }, // Required for Railway's public URL
+  connectTimeout: 5000 // Fail fast
+});
   }
 
   async testConnection(retries = 3, delay = 2000) {
