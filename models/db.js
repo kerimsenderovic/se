@@ -1,4 +1,4 @@
-const mysql = require('mysql2/promise'); // Use the promise version
+const mysql = require('mysql2/promise');
 
 class Database {
     constructor() {
@@ -16,7 +16,7 @@ class Database {
 
     async testConnection() {
         try {
-            const connection = await this.pool.getConnection();
+            const connection = await this.pool.getConnection(); // get connection from pool
             await connection.ping();
             connection.release();
             console.log('Successfully connected to MySQL database');
