@@ -3,20 +3,33 @@ let instance = null;
 
 class Database {
     constructor() {
-        this.connection = mysql.createConnection({
-            host: 'localhost',
-            user: 'root',
-            password: '',         
-            database: 'task_management'
-        });
+        this.connectWithRetry();
+    }
 
-        this.connection.connect((err) => {
-            if (err) {
-                console.error('Database connection failed:', err.stack);
-                return;
-            }
-            console.log('Connected to MySQL database.');
-        });
+    connectWithRetry(retries = 10, delay = 3000) {
+        const connect = () => {
+            this.connection = mysql.createConnection({
+                host: process.env.DB_HOST || 'localhost',
+                user: process.env.DB_USER || 'root',
+                password: process.env.DB_PASSWORD || '',
+                database: process.env.DB_NAME || 'task_management'
+            });
+
+            this.connection.connect((err) => {
+                if (err) {
+                    console.error(`Database connection failed. Retries left: ${retries - 1}`);
+                    if (retries <= 1) {
+                        console.error('Could not connect to the database. Exiting...');
+                        process.exit(1);
+                    }
+                    setTimeout(() => this.connectWithRetry(retries - 1, delay), delay);
+                } else {
+                    console.log('✅ Connected to MySQL database.');
+                }
+            });
+        };
+
+        connect();
     }
 
     static getInstance() {
