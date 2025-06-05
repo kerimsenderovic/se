@@ -1,4 +1,4 @@
-const db = require('./db').getInstance().getConnection();
+const db = require('./db').getPool();
 
 class ProjectModel {
     static getAll(callback) {

@@ -1,43 +1,53 @@
 const TaskModel = require('../models/taskModel');
 const TaskFactory = require('../factories/taskFactory');
 
-
-
-exports.getAllTasks = (req, res) => {
-    TaskModel.getAll((err, tasks) => {
-        if (err) return res.status(500).json({ error: err });
-        res.json(tasks);
-    });
+exports.getAllTasks = async (req, res) => {
+  try {
+    const tasks = await TaskModel.getAll();
+    res.json(tasks);
+  } catch (err) {
+    res.status(500).json({ error: err.message || err });
+  }
 };
 
-exports.getTaskById = (req, res) => {
-    TaskModel.getById(req.params.id, (err, task) => {
-        if (err) return res.status(500).json({ error: err });
-        res.json(task[0]);
-    });
+exports.getTaskById = async (req, res) => {
+  try {
+    const task = await TaskModel.getById(req.params.id);
+    if (!task) return res.status(404).json({ error: 'Task not found' });
+    res.json(task);
+  } catch (err) {
+    res.status(500).json({ error: err.message || err });
+  }
 };
 
-exports.createTask = (req, res) => {
-    const { type = 'normal', title, description, status } = req.body; 
+exports.createTask = async (req, res) => {
+  try {
+    const { type = 'normal', title, description, status } = req.body;
     const task = TaskFactory(type, title, description);
-
-    
-    TaskModel.create({ ...task, status }, (err, result) => {  
-        if (err) return res.status(500).json({ error: err });
-        res.json({ message: 'Task created', id: result.insertId });
-    });
+    const insertId = await TaskModel.create({ ...task, status });
+    res.json({ message: 'Task created', id: insertId });
+  } catch (err) {
+    res.status(500).json({ error: err.message || err });
+  }
 };
-exports.updateTask = (req, res) => {
+
+exports.updateTask = async (req, res) => {
+  try {
     const task = req.body;
-    TaskModel.update(req.params.id, task, (err) => {
-        if (err) return res.status(500).json({ error: err });
-        res.json({ message: 'Task updated' });
-    });
+    const affectedRows = await TaskModel.update(req.params.id, task);
+    if (affectedRows === 0) return res.status(404).json({ error: 'Task not found' });
+    res.json({ message: 'Task updated' });
+  } catch (err) {
+    res.status(500).json({ error: err.message || err });
+  }
 };
 
-exports.deleteTask = (req, res) => {
-    TaskModel.delete(req.params.id, (err) => {
-        if (err) return res.status(500).json({ error: err });
-        res.json({ message: 'Task deleted' });
-    });
+exports.deleteTask = async (req, res) => {
+  try {
+    const affectedRows = await TaskModel.delete(req.params.id);
+    if (affectedRows === 0) return res.status(404).json({ error: 'Task not found' });
+    res.json({ message: 'Task deleted' });
+  } catch (err) {
+    res.status(500).json({ error: err.message || err });
+  }
 };
