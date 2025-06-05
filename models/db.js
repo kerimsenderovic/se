@@ -1,35 +1,35 @@
-const mysql = require('mysql2');
-let instance = null;
+const mysql = require('mysql2/promise'); // Use the promise version
 
 class Database {
     constructor() {
-        this.connection = mysql.createConnection({
+        this.pool = mysql.createPool({
             host: process.env.MYSQLHOST,
             user: process.env.MYSQLUSER,
             password: process.env.MYSQLPASSWORD,
             database: process.env.MYSQLDATABASE,
             port: process.env.MYSQLPORT || 3306,
-        });
-
-        this.connection.connect((err) => {
-            if (err) {
-                console.error('Database connection failed:', err.stack);
-                return;
-            }
-            console.log('Connected to MySQL database.');
+            waitForConnections: true,
+            connectionLimit: 10,
+            queueLimit: 0
         });
     }
 
-    static getInstance() {
-        if (!instance) {
-            instance = new Database();
+    async testConnection() {
+        try {
+            const connection = await this.pool.getConnection();
+            await connection.ping();
+            connection.release();
+            console.log('Successfully connected to MySQL database');
+            return true;
+        } catch (err) {
+            console.error('Database connection failed:', err);
+            return false;
         }
-        return instance;
     }
 
-    getConnection() {
-        return this.connection;
+    getPool() {
+        return this.pool;
     }
 }
 
-module.exports = Database;
+module.exports = new Database();
