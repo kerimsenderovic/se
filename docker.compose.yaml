@@ -6,8 +6,9 @@ services:
     environment:
       MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
       MYSQL_DATABASE: task_management
+      MYSQL_ROOT_PASSWORD: ""  # It's better to set a root password in prod!
     ports:
-      - "3307:3306"
+      - "3307:3306"   # maps container 3306 to localhost 3307
     volumes:
       - db_data:/var/lib/mysql
     healthcheck:
@@ -28,6 +29,7 @@ services:
       DB_USER: root
       DB_PASSWORD: ""
       DB_NAME: task_management
+      DB_PORT: 3306
 
 volumes:
   db_data:
