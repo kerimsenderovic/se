@@ -6,7 +6,6 @@ const Database = require('./models/db');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Simplified CORS configuration that works
 const allowedOrigins = [
   'https://se-production-13b7.up.railway.app',
   'https://se-production-4541.up.railway.app',
@@ -14,32 +13,8 @@ const allowedOrigins = [
 ];
 
 app.use(cors({
-  origin: allowedOrigins,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
-}));
-
-app.use(express.json());
-app.use(express.static('public'));
-
-// Import routes separately to ensure proper loading
-const taskRoutes = require('./routes/taskRoutes');
-const userRoutes = require('./routes/userRoutes');
-const projectRoutes = require('./routes/projectRoutes');
-
-// Routes
-app.use('/api/tasks', taskRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/projects', projectRoutes);
-
-// Health check
-app.get('/api', (req, res) => {
-  res.json({ status: 'API Running' });
-});
-
-app.use(cors({
   origin: function (origin, callback) {
+    // Allow requests with no origin like mobile apps or curl
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -50,6 +25,23 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
+
+app.use(express.json());
+app.use(express.static('public'));
+
+// Routes
+const taskRoutes = require('./routes/taskRoutes');
+const userRoutes = require('./routes/userRoutes');
+const projectRoutes = require('./routes/projectRoutes');
+
+app.use('/api/tasks', taskRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/projects', projectRoutes);
+
+// Health check
+app.get('/api', (req, res) => {
+  res.json({ status: 'API Running' });
+});
 
 // Start server
 async function startServer() {
