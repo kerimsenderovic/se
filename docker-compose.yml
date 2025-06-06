@@ -1,0 +1,26 @@
+version: '3.8'
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"  # Maps host port 3000 → container port 3000
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - .:/usr/src/app  # Syncs local files with container
+      - /usr/src/app/node_modules  # Prevents host node_modules override
+    depends_on:
+      - db  # Waits for MySQL to start first
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: lzxkPnxcOhYcozXiIAnbOpVOzNWOThYn  # From your .env
+      MYSQL_DATABASE: railway
+    ports:
+      - "33610:3306"  # Maps host port 33610 → MySQL default port 3306
+    volumes:
+      - mysql_data:/var/lib/mysql  # Persists database data
+
+volumes:
+  mysql_data:  # Named volume for MySQL storage
