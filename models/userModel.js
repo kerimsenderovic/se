@@ -1,31 +1,36 @@
 const db = require('./db').getPool();
 
 class UserModel {
-    static getAll(callback) {
-        const sql = 'SELECT * FROM users';
-        db.query(sql, callback);
-    }
+  static async getAll() {
+    const [rows] = await db.query('SELECT * FROM users');
+    return rows;
+  }
 
-    static getById(id, callback) {
-        const sql = 'SELECT * FROM users WHERE id = ?';
-        db.query(sql, [id], callback);
-    }
+  static async getById(id) {
+    const [rows] = await db.query('SELECT * FROM users WHERE id = ?', [id]);
+    return rows[0];
+  }
 
-    static create(user, callback) {
-        const sql = 'INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)';
-        db.query(sql, [user.username, user.email, user.password, user.role], callback);
-    }
+  static async create(user) {
+    const [result] = await db.query(
+      'INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)',
+      [user.username, user.email, user.password, user.role]
+    );
+    return result.insertId;
+  }
 
-    static update(id, user, callback) {
-        const sql = 'UPDATE users SET username = ?, email = ?, password = ?, role = ? WHERE id = ?';
-        const params = [user.username, user.email, user.password, user.role, id];
-        db.query(sql, params, callback);
-    }
+  static async update(id, user) {
+    const [result] = await db.query(
+      'UPDATE users SET username = ?, email = ?, password = ?, role = ? WHERE id = ?',
+      [user.username, user.email, user.password, user.role, id]
+    );
+    return result.affectedRows;
+  }
 
-    static delete(id, callback) {
-        const sql = 'DELETE FROM users WHERE id = ?';
-        db.query(sql, [id], callback);
-    }
+  static async delete(id) {
+    const [result] = await db.query('DELETE FROM users WHERE id = ?', [id]);
+    return result.affectedRows;
+  }
 }
 
 module.exports = UserModel;
