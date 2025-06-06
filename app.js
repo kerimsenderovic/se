@@ -13,62 +13,101 @@ const allowedOrigins = [
   'http://localhost:3000'
 ];
 
-// CORS middleware
+// 1. First apply raw CORS middleware
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    res.header('Access-Control-Allow-Credentials', 'true');
+  }
+  next();
+});
+
+// 2. Then apply the cors package middleware
 app.use(cors({
-  origin: allowedOrigins,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
-  credentials: true,
-  optionsSuccessStatus: 204
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
 }));
+
+// 3. Explicit OPTIONS handler
+app.options('*', cors());
 
 app.use(express.json());
 app.use(express.static('public'));
 
-// Import routes with error handling
-let taskRoutes, userRoutes, projectRoutes;
-try {
-  taskRoutes = require('./routes/taskRoutes');
-  userRoutes = require('./routes/userRoutes');
-  projectRoutes = require('./routes/projectRoutes');
-} catch (err) {
-  console.error('Route loading failed:', err);
-  process.exit(1);
-}
-
-// Verify routes before attaching them
-const verifyRouter = (router) => {
-  if (!router || typeof router !== 'function') {
-    throw new Error('Invalid router configuration');
+// Route loading with validation
+const loadRouter = (path) => {
+  try {
+    const router = require(path);
+    if (!router || typeof router !== 'function') {
+      throw new Error(`Invalid router at ${path}`);
+    }
+    
+    // Validate all routes in the router
+    router.stack.forEach(layer => {
+      if (layer.route) {
+        const path = layer.route.path;
+        if (path.includes(':/') || path.includes('/:')) {
+          throw new Error(`Invalid route parameter in path: ${path}`);
+        }
+      }
+    });
+    
+    return router;
+  } catch (err) {
+    console.error(`Error loading router ${path}:`, err);
+    process.exit(1);
   }
-  return router;
 };
 
-// Attach routes with error handling
-try {
-  app.use('/api/tasks', verifyRouter(taskRoutes));
-  app.use('/api/users', verifyRouter(userRoutes));
-  app.use('/api/projects', verifyRouter(projectRoutes));
-} catch (err) {
-  console.error('Route attachment failed:', err);
-  process.exit(1);
-}
+// Load routes
+const taskRoutes = loadRouter('./routes/taskRoutes');
+const userRoutes = loadRouter('./routes/userRoutes');
+const projectRoutes = loadRouter('./routes/projectRoutes');
 
-// Health check
+// Attach routes
+app.use('/api/tasks', taskRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/projects', projectRoutes);
+
+// Health check endpoint
 app.get('/api', (req, res) => {
-  res.json({ 
+  res.json({
     status: 'API Running',
-    allowedOrigins: allowedOrigins,
-    routes: ['/api/tasks', '/api/users', '/api/projects']
+    cors: {
+      allowedOrigins: allowedOrigins,
+      currentOrigin: req.headers.origin,
+      allowed: allowedOrigins.includes(req.headers.origin)
+    }
   });
 });
 
 // Error handling
 app.use((err, req, res, next) => {
-  console.error('Server error:', err.stack);
-  res.status(500).json({ 
-    error: 'Server Error',
-    message: err.message
+  console.error('Error:', err.message);
+  
+  // Ensure CORS headers are set even on errors
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+  }
+  
+  res.status(err.status || 500).json({
+    error: err.message || 'Server Error',
+    cors: {
+      allowedOrigins: allowedOrigins,
+      currentOrigin: origin,
+      allowed: allowedOrigins.includes(origin)
+    }
   });
 });
 
@@ -79,11 +118,10 @@ async function startServer() {
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`Server running on port ${PORT}`);
       console.log('Allowed origins:', allowedOrigins);
-      console.log('Available routes:');
-      console.log('- GET /api');
-      console.log('- /api/tasks');
-      console.log('- /api/users');
-      console.log('- /api/projects');
+      console.log('CORS configuration:');
+      console.log('- Pre-flight OPTIONS enabled');
+      console.log('- Credentials allowed');
+      console.log('- Dynamic origin checking');
     });
   } catch (error) {
     console.error('Startup failed:', error);
