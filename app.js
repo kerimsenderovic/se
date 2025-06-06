@@ -13,102 +13,62 @@ const allowedOrigins = [
   'http://localhost:3000'
 ];
 
-// 1. First apply raw CORS middleware
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
-    res.header('Access-Control-Allow-Origin', origin);
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-    res.header('Access-Control-Allow-Credentials', 'true');
-  }
-  next();
-});
-
-// 2. Then apply the cors package middleware
+// More permissive CORS middleware
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = `The CORS policy for this site does not allow access from ${origin}`;
+      return callback(new Error(msg), false);
     }
+    return callback(null, true);
   },
-  credentials: true
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  credentials: true,
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }));
 
-// 3. Explicit OPTIONS handler
+// Handle preflight requests
 app.options('*', cors());
 
 app.use(express.json());
 app.use(express.static('public'));
 
-// Route loading with validation
-const loadRouter = (path) => {
-  try {
-    const router = require(path);
-    if (!router || typeof router !== 'function') {
-      throw new Error(`Invalid router at ${path}`);
-    }
-    
-    // Validate all routes in the router
-    router.stack.forEach(layer => {
-      if (layer.route) {
-        const path = layer.route.path;
-        if (path.includes(':/') || path.includes('/:')) {
-          throw new Error(`Invalid route parameter in path: ${path}`);
-        }
-      }
-    });
-    
-    return router;
-  } catch (err) {
-    console.error(`Error loading router ${path}:`, err);
-    process.exit(1);
-  }
-};
+// Import routes
+const taskRoutes = require('./routes/taskRoutes');
+const userRoutes = require('./routes/userRoutes');
+const projectRoutes = require('./routes/projectRoutes');
 
-// Load routes
-const taskRoutes = loadRouter('./routes/taskRoutes');
-const userRoutes = loadRouter('./routes/userRoutes');
-const projectRoutes = loadRouter('./routes/projectRoutes');
-
-// Attach routes
+// Routes
 app.use('/api/tasks', taskRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/projects', projectRoutes);
 
-// Health check endpoint
+// Health check
 app.get('/api', (req, res) => {
-  res.json({
-    status: 'API Running',
-    cors: {
-      allowedOrigins: allowedOrigins,
-      currentOrigin: req.headers.origin,
-      allowed: allowedOrigins.includes(req.headers.origin)
-    }
-  });
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigins.join(', '));
+  res.json({ status: 'API Running' });
 });
 
 // Error handling
 app.use((err, req, res, next) => {
-  console.error('Error:', err.message);
+  console.error(err.stack);
   
-  // Ensure CORS headers are set even on errors
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
-    res.header('Access-Control-Allow-Origin', origin);
-    res.header('Access-Control-Allow-Credentials', 'true');
+  // Ensure CORS headers are present even on error responses
+  res.header('Access-Control-Allow-Origin', allowedOrigins.join(', '));
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  if (err.message.includes('CORS policy')) {
+    res.status(403).json({ error: err.message });
+  } else {
+    res.status(500).json({ error: 'Server Error' });
   }
-  
-  res.status(err.status || 500).json({
-    error: err.message || 'Server Error',
-    cors: {
-      allowedOrigins: allowedOrigins,
-      currentOrigin: origin,
-      allowed: allowedOrigins.includes(origin)
-    }
-  });
 });
 
 // Start server
@@ -117,11 +77,7 @@ async function startServer() {
     await Database.testConnection();
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`Server running on port ${PORT}`);
-      console.log('Allowed origins:', allowedOrigins);
-      console.log('CORS configuration:');
-      console.log('- Pre-flight OPTIONS enabled');
-      console.log('- Credentials allowed');
-      console.log('- Dynamic origin checking');
+      console.log(`Allowed origins: ${allowedOrigins.join(', ')}`);
     });
   } catch (error) {
     console.error('Startup failed:', error);
