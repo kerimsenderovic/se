@@ -8,13 +8,18 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors({
-  origin: ['https://se-production-13b7.up.railway.app', 'http://localhost:3000'],
+  origin: [
+    'https://se-production-13b7.up.railway.app', 
+    'https://se-production-4541.up.railway.app',
+    'http://localhost:3000'
+  ],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type']
+  allowedHeaders: ['Content-Type'],
+  credentials: true
 }));
 app.use(express.json());
 
-// Serve static files from public folder (this serves index.html on '/')
+// Serve static files from public folder
 app.use(express.static('public'));
 
 // API Routes
@@ -26,16 +31,16 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/projects', projectRoutes);
 
-// Optional API root health check
+// API health check
 app.get('/api', (req, res) => res.send('API Running'));
 
-// Error handling middleware
+// Error handling
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).send('Server Error');
 });
 
-// Start server and connect to DB
+// Start server
 async function startServer() {
   try {
     await Database.testConnection();
