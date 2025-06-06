@@ -14,7 +14,10 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Routes
+// Serve static files from public folder (this serves index.html on '/')
+app.use(express.static('public'));
+
+// API Routes
 const taskRoutes = require('./routes/taskRoutes');
 const userRoutes = require('./routes/userRoutes');
 const projectRoutes = require('./routes/projectRoutes');
@@ -23,16 +26,16 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/projects', projectRoutes);
 
-// Health check
-app.get('/', (req, res) => res.send('API Running'));
+// Optional API root health check
+app.get('/api', (req, res) => res.send('API Running'));
 
-// Error handling
+// Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).send('Server Error');
 });
 
-// Start server
+// Start server and connect to DB
 async function startServer() {
   try {
     await Database.testConnection();
